@@ -1,0 +1,474 @@
+Project Login
+
+-----------------------------------MainActivity--------------------------
+
+package com.example.kunal.projectlogin;
+
+import android.content.Intent;
+import android.support.annotation.NonNull;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.util.Patterns;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.Toast;
+
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+
+import java.util.regex.Pattern;
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+    Button button;
+    EditText email;
+    EditText password;
+    ProgressBar progressBar;
+    FirebaseAuth mAuth;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        mAuth= FirebaseAuth.getInstance();
+        email=(EditText)findViewById(R.id.email);
+        password=(EditText) findViewById(R.id.password);
+        findViewById(R.id.button).setOnClickListener(this);
+        progressBar =(ProgressBar)findViewById(R.id.progressBar);
+        progressBar.setVisibility(View.GONE);
+    }
+
+    private void UserLogin()
+    {
+        String Em=email.getText().toString().trim();
+        String Pass=password.getText().toString().trim();
+
+        if(Em.isEmpty())
+        {
+            email.setError("email required");
+            email.requestFocus();
+            return;
+        }
+
+        if(Pass.isEmpty())
+        {
+            password.setError("Password required");
+            password.requestFocus();
+            return;
+        }
+        if(!Patterns.EMAIL_ADDRESS.matcher(Em).matches())
+        {
+            email.setError("enter a valid email");
+            email.requestFocus();
+            return;
+        }
+        if(password.length()<6)
+        {
+            password.setError("Minimum 6 character required");
+            password.requestFocus();
+            return;
+        }
+        // progressBar.setVisibility(View.VISIBLE);
+        mAuth.signInWithEmailAndPassword(Em, Pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                if(task.isSuccessful())
+                {
+                    Intent intent= new Intent(getApplicationContext(), EnterNumber.class);
+                    intent.addFlags(intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(intent);
+                    progressBar.setVisibility(View.GONE);
+                }
+                else
+                {
+                    Toast.makeText(getApplicationContext(),task.getException().getMessage(),Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()){
+            case R.id.button: {
+                progressBar.setVisibility(View.VISIBLE);
+                UserLogin();
+                break;
+            }
+        }
+
+    }
+}
+------------------------------MapsActivity--------------------------------
+
+package com.example.kunal.projectlogin;
+
+import android.content.Intent;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.FragmentActivity;
+import android.os.Bundle;
+import android.util.Log;
+import android.util.TimeUtils;
+import android.widget.TextView;
+
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+import java.util.concurrent.TimeUnit;
+
+public class MapsActivity123 extends FragmentActivity implements OnMapReadyCallback {
+
+    private GoogleMap mMap;
+    FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+    DatabaseReference referencep = firebaseDatabase.getReference();
+
+    //double a,b;
+    //LatLng position;
+    String lat,logi;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_maps123);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+
+    }
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Intent intent=getIntent();
+        String str = intent.getStringExtra("message2");
+        DatabaseReference refq=referencep.child("users");
+
+
+
+    }
+
+    @Override
+        public void onMapReady (GoogleMap googleMap){
+
+            mMap = googleMap;
+            Intent intent=getIntent();
+            String str = intent.getStringExtra("message2");
+            DatabaseReference refq=referencep.child("users");
+
+            DatabaseReference reference10=referencep.child("users").child(str);
+            reference10.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    String value1=dataSnapshot.child(str+"latitude").getValue().toString();
+                    String value2=dataSnapshot.child(str+"longitude").getValue().toString();
+                    double m=Double.parseDouble(value1);
+                    double n=Double.parseDouble(value2);
+                    LatLng position = new LatLng(m, n);
+                    mMap.clear();
+                    mMap.addMarker(new MarkerOptions().position(position).title("Position of "+str).icon(BitmapDescriptorFactory.fromResource(R.drawable.map50)));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 16));
+
+
+
+                }
+
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
+
+            refq.addChildEventListener(new ChildEventListener() {
+
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+                }
+
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                    String value=dataSnapshot.getValue().toString();
+
+
+                    try {
+                        JSONObject object=new JSONObject(value);
+                        lat=object.getString(str+"latitude");
+                        logi=object.getString(str+"longitude");
+                        double a=Double.parseDouble(lat);
+                        double b=Double.parseDouble(logi);
+                        LatLng position = new LatLng(a, b);
+                        mMap.clear();
+                        mMap.addMarker(new MarkerOptions().position(position).title("Position of "+str).icon(BitmapDescriptorFactory.fromResource(R.drawable.map50)));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 16));
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+                }
+
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
+
+        }
+
+}
+
+----------------------------Control Activity---------------------------
+
+package com.example.kunal.projectlogin;
+
+import android.content.Intent;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.Response.ErrorListener;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+public class Control extends AppCompatActivity {
+
+    TextView text;
+    EditText editText;
+    RadioGroup rg;
+    RadioButton rb1,rb2,rb3,rb4;
+    Button button;
+    Button button2;
+    Button button3;
+    FirebaseDatabase firebaseDatabase=FirebaseDatabase.getInstance();
+    DatabaseReference myRef1=firebaseDatabase.getReference();
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_control);
+        rg=(RadioGroup)findViewById(R.id.radioGroup);
+        rb1=(RadioButton)findViewById(R.id.redButton);
+        rb2=(RadioButton)findViewById(R.id.greenButton);
+        rb3=(RadioButton)findViewById(R.id.blueButton);
+        rb4=(RadioButton)findViewById(R.id.clearButton);
+        button=(Button)findViewById(R.id.submitsignal);
+        button2=(Button)findViewById(R.id.submittext);
+        button3=(Button)findViewById(R.id.getlocation);
+        editText=(EditText)findViewById(R.id.editText);
+        text = (TextView)findViewById(R.id.textView2);
+        Intent intent = getIntent();
+        final String str = intent.getStringExtra("message");
+        text.setText(str);
+
+        String p=str;
+
+
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if(rb1.isChecked())
+                {
+                    myRef1.child("users").child(str).child("clear").setValue(0);
+                    myRef1.child("users").child(str).child("signal").setValue("red");
+                }
+                if(rb2.isChecked())
+                {
+                    myRef1.child("users").child(str).child("clear").setValue(0);
+                    myRef1.child("users").child(str).child("signal").setValue("green");
+                }
+                if(rb3.isChecked())
+                {
+                    myRef1.child("users").child(str).child("clear").setValue(0);
+                    myRef1.child("users").child(str).child("signal").setValue("blue");
+
+                }
+                if(rb4.isChecked())
+                {
+                    myRef1.child("users").child(str).child("clear").setValue(1);
+                }
+
+
+                }
+        });
+
+        button2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String r=editText.getText().toString();
+               myRef1.child("users").child(str).child("display_signal").setValue(r);
+            }
+        });
+
+        button3.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //double[] lat;
+                //lat= new double[2];
+                //lat[0]=19.868808;
+               // lat[1]=75.324361;
+                Intent intent=new Intent(getApplicationContext(),MapsActivity123.class);
+                intent.putExtra("message2",p);
+                intent.addFlags(intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(intent);
+
+            }
+        });
+
+    }
+
+}
+
+-----------------------------Gradle App level------------------------------
+
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
+
+android {
+    compileSdkVersion 26
+    defaultConfig {
+        applicationId "com.example.kunal.projectlogin"
+        minSdkVersion 23
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        javaCompileOptions {
+            annotationProcessorOptions {
+                includeCompileClasspath true
+            }
+        }
+        buildTypes {
+            release {
+                minifyEnabled true
+                proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            }
+        }
+
+        packagingOptions {
+            exclude 'META-INF/DEPENDENCIES'
+            exclude 'META-INF/LICENSE'
+            exclude 'META-INF/LICENSE.txt'
+            exclude 'META-INF/license.txt'
+            exclude 'META-INF/NOTICE'
+            exclude 'META-INF/NOTICE.txt'
+            exclude 'META-INF/notice.txt'
+            exclude 'META-INF/ASL2.0'
+        }
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_1_8
+            targetCompatibility JavaVersion.VERSION_1_8
+        }
+        buildToolsVersion '28.0.3'
+    }
+    dependencies {
+        implementation fileTree(include: ['*.jar'], dir: 'libs')
+        implementation 'com.android.support:appcompat-v7:26.1.0'
+        implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+        testImplementation 'junit:junit:4.12'
+        androidTestImplementation 'com.android.support.test:runner:1.0.2'
+        androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+        implementation 'com.android.support:design:26.1.0'
+        implementation 'com.android.volley:volley:1.1.1'
+        implementation 'com.google.firebase:firebase-database:16.0.6'
+        implementation 'com.google.android.gms:play-services-auth:16.0.1'
+        implementation 'com.google.firebase:firebase-auth:16.1.0'
+
+
+    }
+    apply plugin: 'com.google.gms.google-services'
+    productFlavors {
+    }
+}
+dependencies {
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    implementation 'com.google.firebase:firebase-messaging:12.0.1'
+    implementation 'com.google.android.gms:play-services-maps:16.1.0'
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+}
+
+
+
+
+
+
+
+
+-------------------------Gradle Project Level---------------------------
+
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    
+    repositories {
+        google()
+        maven { url "https://maven.google.com" }
+        jcenter()
+    }
+    dependencies {
+        //classpath 'com.android.tools.build:gradle:3.3.1'
+
+        classpath 'com.android.tools.build:gradle:3.3.2'
+        classpath 'com.google.gms:google-services:4.2.0'
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+        //classpath 'com.google.gms:google-services:3.1.1'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+
+        jcenter()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

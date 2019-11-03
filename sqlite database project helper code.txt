@@ -1,0 +1,247 @@
+SQLITE format
+
+xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.myapplicationsqlite.MainActivity">
+
+
+    <EditText
+        android:id="@+id/input_label2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="46dp"
+        android:inputType="text"
+        android:ems="10"
+        android:hint="@string/contact_name" />
+
+    <EditText
+        android:id="@+id/input_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="131dp"
+        android:inputType="numberDecimal"
+        android:ems="10"
+        android:hint="@string/contact_number" />
+
+    <Button
+        android:id="@+id/btn_add"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/input_label"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="37dp"
+        android:text="@string/add_contact" />
+
+    <Spinner
+        android:id="@+id/spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btn_add"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginStart="2dp"
+        android:layout_marginLeft="2dp"
+        android:layout_marginTop="88dp" />
+</RelativeLayout>
+
+
+java
+
+package com.example.myapplicationsqlite;
+
+import android.content.Context;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.Toast;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
+    Spinner spinner;
+    Button btnAdd;
+    EditText inputLabel;
+    EditText contact;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        spinner = findViewById(R.id.spinner);
+        btnAdd =  findViewById(R.id.btn_add);
+        inputLabel = findViewById(R.id.input_label);
+        contact =findViewById(R.id.input_label2);
+
+        spinner.setOnItemSelectedListener(this);
+
+        // Loading spinner data from database
+        loadSpinnerData();
+
+        btnAdd.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View arg0) {
+                String label = inputLabel.getText().toString();
+                String label2 = contact.getText().toString();
+
+                if (label.trim().length() > 0 && label2.trim().length()>0) {
+                    dbhelper db = new dbhelper(getApplicationContext());
+                    db.insertLabel(label,label2);
+
+                    // making input filed text to blank
+                    inputLabel.setText("");
+                    contact.setText("");
+
+                    // Hiding the keyboard
+                    InputMethodManager imm = (InputMethodManager)
+                            getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(inputLabel.getWindowToken(), 0);
+                    // loading spinner with newly added data
+                    loadSpinnerData();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Please enter label name",
+                            Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        });
+    }
+
+    /**
+     * Function to load the spinner data from SQLite database
+     * */
+    private void loadSpinnerData() {
+        dbhelper db = new dbhelper(getApplicationContext());
+        List<String> labels = db.getAllLabels();
+
+        // Creating adapter for spinner
+        ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item, labels);
+
+        // Drop down layout style - list view with radio button
+        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        // attaching data adapter to spinner
+        spinner.setAdapter(dataAdapter);
+    }
+
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position,
+                               long id) {
+        // On selecting a spinner item
+        String label = parent.getItemAtPosition(position).toString();
+
+        // Showing selected spinner item
+        Toast.makeText(parent.getContext(), "You selected: " + label,
+                Toast.LENGTH_LONG).show();
+
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> arg0) {
+        // TODO Auto-generated method stub
+
+    }
+}
+
+databaseHelper class
+
+package com.example.myapplicationsqlite;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import java.util.ArrayList;
+import java.util.List;
+
+public class dbhelper extends SQLiteOpenHelper {
+    private static final int DATABASE_VERSION = 1;
+    private static final String DATABASE_NAME = "spinnerExample";
+    private static final String TABLE_NAME = "labels";
+    private static final String COLUMN_ID = "id";
+    private static final String COLUMN_NAME = "name";
+    private static final String COLUMN_CONTACT="contact";
+
+    public dbhelper(Context context) {
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    // Creating Tables
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        // Category table create query
+        String CREATE_ITEM_TABLE = "CREATE TABLE " + TABLE_NAME + "("
+                + COLUMN_ID + " INTEGER PRIMARY KEY," + COLUMN_NAME + " TEXT,"+COLUMN_CONTACT+" TEXT)";
+        db.execSQL(CREATE_ITEM_TABLE);
+    }
+
+    // Upgrading database
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        // Drop older table if existed
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+
+        // Create tables again
+        onCreate(db);
+    }
+
+    /**
+     * Inserting new lable into lables table
+     * */
+    public void insertLabel(String label, String contact){
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_NAME, label);
+        values.put(COLUMN_CONTACT,contact);//column name, column value
+
+        // Inserting Row
+        db.insert(TABLE_NAME, null, values);//tableName, nullColumnHack, CotentValues
+        db.close(); // Closing database connection
+    }
+
+    /**
+     * Getting all labels
+     * returns list of labels
+     * */
+    public List<String> getAllLabels(){
+        //List<String> list1 = new ArrayList<String>();
+        //List<String> list2 = new ArrayList<String>();
+        List<String> list = new ArrayList<String>();
+
+        // Select All Query
+        String selectQuery = "SELECT  * FROM " + TABLE_NAME;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);//selectQuery,selectedArguments
+
+        // looping through all rows and adding to list
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(cursor.getString(2)+" : "+cursor.getString(1));//adding 2nd column data
+                //list2.add(cursor.getString(2));
+            } while (cursor.moveToNext());
+        }
+        // closing connection
+        cursor.close();
+        db.close();
+        // returning lables
+        return list;
+    }
+}

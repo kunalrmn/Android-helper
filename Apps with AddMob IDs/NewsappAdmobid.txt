@@ -1,0 +1,5 @@
+News app Admob id
+ca-app-pub-2422874112475930~8412599459
+
+ad unit id:
+ca-app-pub-2422874112475930/5706545069

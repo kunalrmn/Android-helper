@@ -1,0 +1,37 @@
+Timer App
+
+package com.example.kunal.timerapp;
+
+import android.os.CountDownTimer;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.widget.TextView;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        
+        
+        final TextView textView=(TextView) findViewById(R.id.Time1);
+        final TextView textView1=(TextView) findViewById(R.id.Result1);
+        new CountDownTimer(100000, 1000) {
+
+            public void onTick(long millisecondsUntilDone) {
+                textView.setText("Time: " + String.valueOf(millisecondsUntilDone / 1000));
+
+            }
+
+
+            public void onFinish() {
+                textView1.setText("DONE !!!");
+
+            }
+
+        }.start();
+
+
+    }
+}
